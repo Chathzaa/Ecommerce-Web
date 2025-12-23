@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const port = process.env.PORT || 4000;
 const express = require("express");
 const app = express();
@@ -10,13 +12,23 @@ const { error } = require("console");
 const { type } = require("os");
 
 
-app.use(cors());
+app.use(cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://your-frontend.vercel.app",
+      "https://your-admin.vercel.app"
+    ],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //Database connection with Mongodb
-mongoose.connect("mongodb+srv://ecommerceMern:Chathumi123@cluster0.wfqmu1m.mongodb.net/ecommerce-mern?retryWrites=true&w=majority&appName=Cluster0")
-
+// mongoose.connect("mongodb+srv://ecommerceMern:Chathumi123@cluster0.wfqmu1m.mongodb.net/ecommerce-mern?retryWrites=true&w=majority&appName=Cluster0")
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log(err));
 //API Creation
 app.get("/", (req,res) => {
     res.send("Express App is running")
@@ -38,7 +50,7 @@ app.use('/images', express.static('upload/images'))
 app.post("/upload", upload.single('product'), (req, res) => {
     res.json({
         success : 1,
-        image_url: `http://localhost:${port}/images/${req.file.filename}`
+        image_url: `process.env.BASE_URL/images/${req.file.filename}`
     })
 })
 
@@ -170,7 +182,7 @@ app.post('/signup', async(req, res) => {
                 id: user.id
             }
         }
-        const token = jwt.sign(data, 'secret_ecom');
+        const token = jwt.sign(data, process.env.JWT_SECRET);
         res.json({success: true, token})
 })
 
@@ -185,7 +197,7 @@ app.post('/login', async(req, res) => {
                     id: user.id
                 }
             }
-            const token = jwt.sign(data, 'secret_ecom');
+            const token = jwt.sign(data, process.env.JWT_SECRET);
             res.json({success: true, token})
         }
         else{
@@ -220,7 +232,7 @@ const fetchUser = async(req, res, next)=>{
         res.status(401).send({errors: "Please authenticate using valid login"})
     } else {
         try {
-            const data = jwt.verify(token, 'secret_ecom');
+            const data = jwt.verify(token, process.env.JWT_SECRET);
             req.user = data.user;
             next();            
         } catch (error){
