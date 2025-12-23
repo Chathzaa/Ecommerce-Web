@@ -12,7 +12,8 @@ const Popular = () => {
 
   return (
    <section className='bg-primary'>
-    <div className='max-padd-container py-12 xl:py-28 xl:w-[88%]'>
+    {/* <div className='max-padd-container py-12 xl:py-28 xl:w-[88%]'> */}
+    <div className='max-padd-container py-12 xl:py-28 xl:w-[88%] mx-auto'>
         <h3 className='h3 text-center'>Popular Products</h3>
         <hr className='h-[3px] w-1/2 mx-auto bg-gradient-to-l from-transparent via-black to-transparent mb-16'/>
         {/* container */}

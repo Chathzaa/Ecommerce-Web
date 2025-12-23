@@ -7,7 +7,8 @@ const Footer = () => {
   return (
     <footer className="flexCenter pb-24 pt-20">
       <div className="max_padd_container flex w-full flex-col gap-14">
-        <div className="flex flex-col items-start justify-center gap-[%10] md:flex-row">
+        {/* <div className="flex flex-col items-start justify-center gap-[%10] md:flex-row"> */}
+        <div className="flex flex-col items-start justify-start gap-[10%] md:flex-row">
           <Link to="/" className="mb-10 bold-20">Shoppee</Link>
           <div className="flex flex-wrap gap-8 sm:justify-between md:flex-1">
             {FOOTER_LINKS.map((col) => (
