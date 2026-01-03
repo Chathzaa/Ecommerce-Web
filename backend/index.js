@@ -50,7 +50,7 @@ app.use('/images', express.static('upload/images'))
 app.post("/upload", upload.single('product'), (req, res) => {
     res.json({
         success : 1,
-        image_url: `process.env.BASE_URL/images/${req.file.filename}`
+        image_url: `http://localhost:4000/images/${req.file.filename}`
     })
 })
 
@@ -92,16 +92,51 @@ const Product = mongoose.model("Product", {
 
 //Creating api for addproduct
 
+// app.post('/addproduct', async(req, res) => {
+//     let products = await Product.find({});
+//     let id;
+//     if(products.length > 0){
+//         let last_product_array = products.slice(-1);
+//         let last_product = last_product_array[0];
+//         id = last_product.id +1;
+//     }else{
+//         id = 1;
+//     }
+//     const product = new Product({
+//         id: id,
+//         name: req.body.name,
+//         image: req.body.image,
+//         category: req.body.category,
+//         new_price: req.body.new_price,
+//         old_price: req.body.old_price,
+//     });
+//     console.log(product);
+//     await product.save();
+//     console.log("Saved")
+//     res.json({
+//         success: true,
+//         name: req.body.name,
+//     })
+// })
+// Creating API for addproduct
 app.post('/addproduct', async(req, res) => {
-    let products = await Product.find({});
+    let products = await Product.find({}).sort({ id: -1 }).limit(1); // Get highest ID
     let id;
+    
     if(products.length > 0){
-        let last_product_array = products.slice(-1);
-        let last_product = last_product_array[0];
-        id = last_product.id +1;
-    }else{
-        id = 1;
+        id = products[0].id + 1; // Increment from highest
+    } else {
+        id = 1; // First product
     }
+    
+    // Double-check ID doesn't exist (safety check)
+    const existingProduct = await Product.findOne({ id: id });
+    if (existingProduct) {
+        console.error('ID collision detected! Finding next available ID...');
+        const allProducts = await Product.find({}).sort({ id: -1 });
+        id = allProducts.length > 0 ? allProducts[0].id + 1 : 1;
+    }
+    
     const product = new Product({
         id: id,
         name: req.body.name,
@@ -110,9 +145,31 @@ app.post('/addproduct', async(req, res) => {
         new_price: req.body.new_price,
         old_price: req.body.old_price,
     });
-    console.log(product);
+    
+    console.log('Adding product with ID:', id);
     await product.save();
     console.log("Saved")
+    
+    res.json({
+        success: true,
+        name: req.body.name,
+        id: id
+    })
+})
+
+// Creating API for updating product
+app.post('/updateproduct', async(req, res) => {
+    await Product.findOneAndUpdate(
+        {id: req.body.id},
+        {
+            name: req.body.name,
+            image: req.body.image,
+            category: req.body.category,
+            new_price: req.body.new_price,
+            old_price: req.body.old_price,
+        }
+    );
+    console.log("Updated");
     res.json({
         success: true,
         name: req.body.name,
@@ -268,6 +325,87 @@ app.post('/getcart',fetchUser, async(req, res) => {
     let userData = await User.findOne({_id: req.user.id});
     res.json(userData.cartData);
 })
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Create Stripe Checkout Session
+app.post('/create-checkout-session', fetchUser, async (req, res) => {
+    try {
+        const { items } = req.body; // Array of cart items
+
+        // Create line items for Stripe
+        const lineItems = items.map(item => ({
+            price_data: {
+                currency: 'lkr', // Sri Lankan Rupees
+                product_data: {
+                    name: item.name,
+                    images: [item.image],
+                },
+                unit_amount: Math.round(item.new_price * 100), // Convert to cents
+            },
+            quantity: item.quantity,
+        }));
+
+        // Create Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: lineItems,
+            mode: 'payment',
+            success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL}/cart-page`,
+            customer_email: req.body.email,
+        });
+
+        res.json({ url: session.url });
+    } catch (error) {
+        console.error('Stripe Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Verify payment and clear cart
+app.post('/verify-payment', fetchUser, async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        
+        console.log('Verifying payment for session:', sessionId); // Debug log
+        console.log('User ID:', req.user.id); // Debug log
+        
+        // Retrieve session from Stripe
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        console.log('Payment status:', session.payment_status); // Debug log
+        
+        if (session.payment_status === 'paid') {
+            // Clear user's cart - FIXED VERSION
+            let cart = {};
+            for (let i = 0; i < 301; i++) {  // Changed to 301 to match your initialization
+                cart[i] = 0;
+            }
+            
+            // Update user cart in database
+            const updateResult = await User.findOneAndUpdate(
+                { _id: req.user.id }, 
+                { cartData: cart },
+                { new: true }  // Return updated document
+            );
+            
+            console.log('Cart cleared for user:', req.user.id); // Debug log
+            console.log('Update result:', updateResult ? 'Success' : 'Failed'); // Debug log
+            
+            res.json({ 
+                success: true, 
+                message: 'Payment successful and cart cleared',
+                customerDetails: session.customer_details
+            });
+        } else {
+            res.json({ success: false, message: 'Payment not completed' });
+        }
+    } catch (error) {
+        console.error('Verification Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 

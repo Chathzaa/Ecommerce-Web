@@ -42,6 +42,7 @@ import Cart from "./pages/Cart";
 import Login from "./pages/Login";
 import Product from "./pages/Product";
 import Footer from "./components/Footer";
+import Success from "./pages/Success";
 /* import images */ 
 import bannermens from "./assets/bannermens.png"
 import bannerwomens from "./assets/bannerwomens.png"
@@ -69,6 +70,7 @@ function AppContent() {
         </Route>
         <Route path="/cart-page" element={<Cart />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/success" element={<Success />} />
         {/* Add signup route here if you have one */}
         {/* <Route path="/signup" element={<Signup />} /> */}
       </Routes>

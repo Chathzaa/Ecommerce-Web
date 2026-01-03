@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="max_padd_container flex w-full flex-col gap-14">
         {/* <div className="flex flex-col items-start justify-center gap-[%10] md:flex-row"> */}
         <div className="flex flex-col items-start justify-start gap-[10%] md:flex-row">
-          <Link to="/" className="mb-10 bold-20">Shoppee</Link>
+          <Link to="/" className="mb-10 bold-20">Sihaya</Link>
           <div className="flex flex-wrap gap-8 sm:justify-between md:flex-1">
             {FOOTER_LINKS.map((col) => (
               <FooterColumn title={col.title} key={col.title}> 
@@ -41,7 +41,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="border bg-gray-20 "></div>
-        <p className="text-center regualr-14 text-gray-30">2024 Shoppee | All rights reserved.</p>
+        <p className="text-center regualr-14 text-gray-30">2024 Sihaya | All rights reserved.</p>
       </div>
     </footer>
   )
